@@ -1,0 +1,20 @@
+{
+  "batch_id": "BATCH-2026-0331-DIST-ORPHAN",
+  "node_type": "distributor",
+  "node_id": "DIST-CA-002",
+  "node_name": "Pacific Cold Chain — South Bay",
+  "product": "Organic Strawberries — Mixed Variety",
+  "quantity_kg": 200,
+  "timestamp_in": "2026-03-29T12:00:00Z",
+  "timestamp_out": "2026-03-30T07:00:00Z",
+  "handler": "Regional Cold Chain LLC",
+  "handler_cert_id": "CERT-DS-2025-201",
+  "temperature_log": [
+    {"time": "2026-03-29T12:00:00Z", "temp_c": 4.1},
+    {"time": "2026-03-30T00:00:00Z", "temp_c": 4.3},
+    {"time": "2026-03-30T07:00:00Z", "temp_c": 4.0}
+  ],
+  "parent_batch_ids": ["BATCH-2026-0331-PROC-MISSING"],
+  "notes": "Origin batch records not yet received from processor. Awaiting upload.",
+  "lot_code": "LOT-DIST-002-20260329-001"
+}

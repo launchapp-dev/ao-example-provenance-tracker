@@ -1,0 +1,20 @@
+handlers:
+  - cert_id: "CERT-FM-2025-042"
+    name: "J. Martinez"
+    node_ids: ["FARM-CA-042"]
+    valid_until: "2026-12-31"
+
+  - cert_id: "CERT-PR-2025-101"
+    name: "A. Chen"
+    node_ids: ["PROC-CA-010", "PROC-CA-011"]
+    valid_until: "2026-12-31"
+
+  - cert_id: "CERT-DS-2025-201"
+    name: "Regional Cold Chain LLC"
+    node_ids: ["DIST-CA-001", "DIST-CA-002"]
+    valid_until: "2027-06-30"
+
+  - cert_id: "CERT-RT-2025-301"
+    name: "FreshMart Receiving"
+    node_ids: ["RETAIL-CA-050"]
+    valid_until: "2026-12-31"

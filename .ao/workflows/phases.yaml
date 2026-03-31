@@ -1,0 +1,226 @@
+phases:
+  # ── batch-ingest workflow phases ──────────────────────────────────────────
+
+  scan-incoming:
+    mode: command
+    command:
+      program: bash
+      args: ["-c", "bash scripts/scan-incoming.sh"]
+      cwd_mode: project_root
+      timeout_secs: 60
+
+  normalize-batches:
+    mode: agent
+    agent: batch-ingester
+    directive: |
+      Read data/staged/manifest.json to find all staged batch records.
+      If the manifest is empty or missing, output "No batches to process" and stop.
+      For each batch listed in the manifest:
+        1. Read the staged file from data/staged/{batch-id}.json
+        2. Normalize fields per your instructions (ISO timestamps, metric units, snake_case)
+        3. Validate handler cert IDs against config/authorized-handlers.yaml
+        4. Compute integrity hash (SHA-256 of the JSON content, fields sorted alphabetically)
+        5. Write normalized record to data/normalized/{batch-id}.json
+      After processing all batches, write data/normalized/batch-index.json.
+      Output a summary: total normalized, total flagged for unauthorized handlers.
+    capabilities:
+      mutates_state: true
+      writes_files: true
+
+  validate-chains:
+    mode: agent
+    agent: chain-validator
+    directive: |
+      Read data/normalized/batch-index.json to get all normalized batches.
+      If the index is missing or empty, output "No batches to validate" and stop.
+      Load the current batch genealogy from memory MCP (entity: "batch-genealogy").
+      For each batch in the index:
+        1. Read data/normalized/{batch-id}.json
+        2. Trace parent_batch_ids to find or extend the chain for this batch
+        3. Validate the handoff sequence and timestamps
+        4. Write/update the chain record in data/chains/{product-slug}/{chain-id}.json
+      Update memory MCP "batch-genealogy" with all new chain links.
+      Write data/validation/chain-status.json with aggregate counts.
+      Output a summary of chains validated, complete vs gaps detected.
+    capabilities:
+      mutates_state: true
+      writes_files: true
+
+  detect-anomalies:
+    mode: agent
+    agent: anomaly-detector
+    directive: |
+      Read data/validation/chain-status.json to understand current chain state.
+      Read all chain records from data/chains/ (recursively).
+      Read all normalized batch files from data/normalized/ (except batch-index.json).
+      Load thresholds from config/thresholds.yaml.
+      Load authorized handlers from config/authorized-handlers.yaml.
+      Run all anomaly checks:
+        - Temperature excursions per batch temperature_log
+        - Timing violations across chain handoffs
+        - Unauthorized handler cert IDs
+        - Quantity discrepancies between parent and child batches
+        - Duplicate batch IDs across chains
+      Write data/anomalies/anomaly-report.json with all detected anomalies.
+      Write data/anomalies/recall-candidates.json listing batch_ids with critical anomalies.
+      Output a summary: total anomalies by severity and type.
+    capabilities:
+      mutates_state: true
+      writes_files: true
+
+  chain-decision:
+    mode: agent
+    agent: chain-validator
+    directive: |
+      Read data/validation/chain-status.json and data/anomalies/anomaly-report.json.
+      Read data/anomalies/recall-candidates.json.
+      Assess the overall state of the batch ingestion run:
+        - How many chains completed successfully?
+        - How many have gaps?
+        - How many have anomalies?
+        - Are there any critical anomalies that indicate a recall situation?
+      A "recall-triggered" verdict requires at least one batch in recall-candidates.json.
+      An "anomaly-flagged" verdict means critical anomalies exist but no recall candidates.
+      A "gap-detected" verdict means chains are incomplete but no critical anomalies.
+      A "complete" verdict means all chains validated with no critical issues.
+      Produce a decision with the required fields.
+    decision_contract:
+      required_fields:
+        - verdict
+        - reasoning
+        - critical_anomaly_count
+        - affected_batch_ids
+
+  generate-certificates:
+    mode: agent
+    agent: certificate-generator
+    directive: |
+      Read output/certificates/index.json if it exists (to avoid regenerating unchanged certs).
+      Read all chain records from data/chains/ (recursively).
+      Read data/anomalies/anomaly-report.json for anomaly details.
+      For each chain with status "complete", "gap_detected", or "anomaly_flagged":
+        1. Generate output/certificates/{chain-id}-provenance.md
+        2. Generate output/consumer/{chain-id}-summary.md
+      For chains in recall-candidates.json, add RECALL banners to both documents.
+      Update output/certificates/index.json with all generated certificates.
+      Output a summary: total certificates generated, statuses.
+    capabilities:
+      mutates_state: true
+      writes_files: true
+
+  compute-checksums:
+    mode: command
+    command:
+      program: bash
+      args: ["-c", "bash scripts/compute-checksums.sh"]
+      cwd_mode: project_root
+      timeout_secs: 30
+
+  # ── compliance-report workflow phases ─────────────────────────────────────
+
+  gather-metrics:
+    mode: command
+    command:
+      program: bash
+      args: ["-c", "bash scripts/gather-metrics.sh"]
+      cwd_mode: project_root
+      timeout_secs: 60
+
+  generate-compliance:
+    mode: agent
+    agent: compliance-reporter
+    directive: |
+      Read data/metrics/daily-stats.json for today's aggregate statistics.
+      Read all chain records from data/chains/ to assess CTE/KDE completeness.
+      Read data/anomalies/anomaly-report.json for anomaly history.
+      Load compliance history from memory MCP (entity: "compliance-history").
+      Generate three compliance output files:
+        1. output/compliance/fsma-204-report.md — full FSMA 204 CTE/KDE analysis
+        2. output/compliance/recall-readiness.md — pick the most recent complete chain
+           and simulate a forward-trace recall within 24 hours
+        3. output/compliance/executive-summary.md — one-page dashboard for leadership
+      Update memory MCP "compliance-history" with today's KDE completeness rate,
+      total chains, anomaly counts, and recall-readiness score.
+      Output a brief summary of compliance status.
+    capabilities:
+      mutates_state: true
+      writes_files: true
+
+  compliance-decision:
+    mode: agent
+    agent: compliance-reporter
+    directive: |
+      Read output/compliance/fsma-204-report.md and output/compliance/executive-summary.md.
+      Read data/metrics/daily-stats.json.
+      Assess compliance status:
+        - "compliant": KDE completeness ≥ 95% and no documentation violations
+        - "documentation-gap": KDE completeness 80–95% or missing non-critical KDEs
+        - "violation": KDE completeness < 80% or missing critical KDEs (lot codes, CTEs)
+      A rework verdict should include specific gaps to investigate.
+    decision_contract:
+      required_fields:
+        - verdict
+        - reasoning
+        - kde_completeness_pct
+        - recall_ready
+
+  # ── recall-response workflow phases ───────────────────────────────────────
+
+  trace-batch:
+    mode: agent
+    agent: chain-validator
+    directive: |
+      The task description contains a batch ID to trace (look for "batch_id:" or a pattern
+      like BATCH-YYYY-MMDD-TYPE-NNN in the task title or description).
+      Load batch genealogy from memory MCP (entity: "batch-genealogy").
+      Trace FORWARD from the specified batch through all child batches (fan-out).
+      Read chain records from data/chains/ to find all chains containing this batch.
+      Identify every downstream batch that could be affected.
+      Write output/recalls/{batch-id}/affected-batches.json:
+      {
+        "source_batch_id": "...",
+        "trace_timestamp": "...",
+        "affected_batch_count": <n>,
+        "affected_batches": [
+          {"batch_id": "...", "node_type": "...", "node_id": "...", "node_name": "...",
+           "product": "...", "quantity_kg": <n>, "timestamp_in": "...", "chain_id": "..."}
+        ]
+      }
+      Write output/recalls/{batch-id}/distribution-map.md describing where the product went.
+      Output a summary of affected batches and distribution reach.
+    capabilities:
+      mutates_state: true
+      writes_files: true
+
+  generate-recall-notice:
+    mode: agent
+    agent: certificate-generator
+    directive: |
+      Find the batch ID from output/recalls/ (look for the most recently modified subdirectory,
+      or parse from the task description).
+      Read output/recalls/{batch-id}/affected-batches.json.
+      Read output/recalls/{batch-id}/distribution-map.md.
+      Read the original batch record from data/normalized/{batch-id}.json if available,
+      or from data/incoming/ subdirectories.
+      Generate two recall documents:
+
+      1. output/recalls/{batch-id}/recall-notice.md — Consumer/retailer notice:
+         - URGENT RECALL header with date
+         - Affected product description, batch range, date range
+         - Geographic distribution (which retailers received it)
+         - Consumer action required (do not consume, return to store)
+         - Retailer action required (remove from shelves, quarantine)
+         - Contact information placeholder
+
+      2. output/recalls/{batch-id}/regulatory-filing.md — FDA/USDA formatted filing:
+         - Recalling firm information
+         - Product description per FDA format
+         - Reason for recall
+         - Complete chain-of-custody evidence (table format)
+         - Distribution extent: states, retailers, quantity
+         - Recall classification placeholder (Class I/II/III)
+
+      Output confirmation of files generated.
+    capabilities:
+      mutates_state: true
+      writes_files: true

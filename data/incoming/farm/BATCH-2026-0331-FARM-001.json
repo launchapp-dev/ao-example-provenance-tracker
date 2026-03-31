@@ -1,0 +1,23 @@
+{
+  "batch_id": "BATCH-2026-0331-FARM-001",
+  "node_type": "farm",
+  "node_id": "FARM-CA-042",
+  "node_name": "Sunrise Organic Farm",
+  "product": "Organic Strawberries",
+  "quantity_kg": 500,
+  "timestamp_in": "2026-03-28T06:00:00Z",
+  "timestamp_out": "2026-03-28T14:00:00Z",
+  "handler": "J. Martinez",
+  "handler_cert_id": "CERT-FM-2025-042",
+  "temperature_log": [
+    {"time": "2026-03-28T06:00:00Z", "temp_c": 4.2},
+    {"time": "2026-03-28T08:00:00Z", "temp_c": 4.5},
+    {"time": "2026-03-28T10:00:00Z", "temp_c": 5.1},
+    {"time": "2026-03-28T12:00:00Z", "temp_c": 4.8},
+    {"time": "2026-03-28T14:00:00Z", "temp_c": 4.3}
+  ],
+  "parent_batch_ids": [],
+  "notes": "First harvest of season. Field 7A. Brix 8.2.",
+  "attachments": ["lot-photo-F001.jpg"],
+  "lot_code": "LOT-FARM-042-20260328-001"
+}

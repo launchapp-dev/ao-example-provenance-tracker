@@ -1,0 +1,42 @@
+nodes:
+  - id: "FARM-CA-042"
+    type: farm
+    name: "Sunrise Organic Farm"
+    location: "Salinas, CA"
+    gps: "36.6777,-121.6555"
+    certifications: ["USDA Organic", "GAP"]
+
+  - id: "PROC-CA-010"
+    type: processor
+    name: "Valley Fresh Processing"
+    location: "Watsonville, CA"
+    gps: "36.9103,-121.7569"
+    certifications: ["SQF Level 3", "FSMA"]
+
+  - id: "PROC-CA-011"
+    type: processor
+    name: "Valley Fresh Processing — Line 2"
+    location: "Watsonville, CA"
+    gps: "36.9103,-121.7569"
+    certifications: ["SQF Level 3", "FSMA"]
+
+  - id: "DIST-CA-001"
+    type: distributor
+    name: "Pacific Cold Chain"
+    location: "San Jose, CA"
+    gps: "37.3382,-121.8863"
+    certifications: ["FSMA", "COOL"]
+
+  - id: "DIST-CA-002"
+    type: distributor
+    name: "Pacific Cold Chain — South Bay"
+    location: "San Jose, CA"
+    gps: "37.3382,-121.8863"
+    certifications: ["FSMA", "COOL"]
+
+  - id: "RETAIL-CA-050"
+    type: retailer
+    name: "FreshMart #50"
+    location: "San Francisco, CA"
+    gps: "37.7749,-122.4194"
+    certifications: ["FDA Retail"]

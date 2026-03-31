@@ -1,0 +1,44 @@
+default_workflow_ref: batch-ingest
+
+workflows:
+  - id: batch-ingest
+    name: "Batch Ingest & Provenance"
+    description: "Scan incoming batch records, validate chains, detect anomalies, generate provenance certificates"
+    phases:
+      - scan-incoming
+      - normalize-batches
+      - validate-chains
+      - detect-anomalies
+      - chain-decision:
+          on_verdict:
+            complete:
+              target: generate-certificates
+            gap-detected:
+              target: generate-certificates
+            anomaly-flagged:
+              target: generate-certificates
+            recall-triggered:
+              target: generate-certificates
+      - generate-certificates
+      - compute-checksums
+
+  - id: compliance-report
+    name: "FSMA 204 Compliance Report"
+    description: "Daily compliance assessment against FSMA 204 traceability requirements"
+    phases:
+      - gather-metrics
+      - generate-compliance
+      - compliance-decision:
+          on_verdict:
+            documentation-gap:
+              target: gather-metrics
+            violation:
+              target: gather-metrics
+          max_rework_attempts: 2
+
+  - id: recall-response
+    name: "Emergency Recall Response"
+    description: "Trace all downstream batches from a given source batch and generate recall notices"
+    phases:
+      - trace-batch
+      - generate-recall-notice

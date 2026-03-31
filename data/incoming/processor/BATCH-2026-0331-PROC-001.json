@@ -1,0 +1,24 @@
+{
+  "batch_id": "BATCH-2026-0331-PROC-001",
+  "node_type": "processor",
+  "node_id": "PROC-CA-010",
+  "node_name": "Valley Fresh Processing",
+  "product": "Organic Strawberries — Washed & Graded",
+  "quantity_kg": 482,
+  "timestamp_in": "2026-03-28T16:30:00Z",
+  "timestamp_out": "2026-03-29T08:00:00Z",
+  "handler": "A. Chen",
+  "handler_cert_id": "CERT-PR-2025-101",
+  "temperature_log": [
+    {"time": "2026-03-28T16:30:00Z", "temp_c": 5.5},
+    {"time": "2026-03-28T20:00:00Z", "temp_c": 4.0},
+    {"time": "2026-03-29T00:00:00Z", "temp_c": 3.8},
+    {"time": "2026-03-29T04:00:00Z", "temp_c": 4.1},
+    {"time": "2026-03-29T08:00:00Z", "temp_c": 4.2}
+  ],
+  "parent_batch_ids": ["BATCH-2026-0331-FARM-001"],
+  "operations": ["wash", "grade", "inspect", "clamshell_pack"],
+  "notes": "Yield 96.4% after grading. 18kg below grade discarded.",
+  "attachments": ["coa-proc-001.pdf"],
+  "lot_code": "LOT-PROC-010-20260328-001"
+}

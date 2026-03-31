@@ -1,0 +1,10 @@
+schedules:
+  - id: hourly-ingest
+    cron: "0 * * * *"
+    workflow_ref: batch-ingest
+    enabled: true
+
+  - id: daily-compliance
+    cron: "0 6 * * *"
+    workflow_ref: compliance-report
+    enabled: true

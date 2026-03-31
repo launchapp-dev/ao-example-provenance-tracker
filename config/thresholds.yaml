@@ -1,0 +1,21 @@
+temperature:
+  dairy:
+    min_c: 0
+    max_c: 4
+  produce:
+    min_c: 1
+    max_c: 7
+  meat:
+    min_c: -2
+    max_c: 4
+  ambient:
+    min_c: 10
+    max_c: 25
+
+transit:
+  max_handoff_gap_hours: 4
+  max_total_transit_hours: 120
+  max_single_node_hours: 48
+
+quantity:
+  max_loss_pct: 5
